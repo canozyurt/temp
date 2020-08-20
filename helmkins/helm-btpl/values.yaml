@@ -1,0 +1,53 @@
+setenv: true
+image: nginx
+branch: dontdelete/
+version: 1
+
+deployment:
+  annotations: {}
+  replicas: 2
+ 
+requests:
+  memory: 200Mi
+  cpu: 100m
+ 
+limits:
+  memory: 2000Mi
+  cpu: 2000m
+
+service:
+  annotations: {}
+  port: 80
+  targetPort: 5000
+  sessionAffinity: None
+
+
+ingress:
+  enabled: true
+  annotations: {}
+  hosts:
+  - domain: example.com
+    subdomain: helm
+    path: /
+  - domain: example.com
+    subdomain: mleh
+    path: /asdf
+
+
+
+configs:
+  test:
+    IdentityServiceSettings__ValidateAudience: false
+    IdentityServiceSettings__ValidateLifetime: true
+  pilot:
+     IdentityServiceSettings__ValidateAudience: true
+     IdentityServiceSettings__ValidateLifetime: false
+  live:
+    IdentityServiceSettings__ValidateAudience: true
+    IdentityServiceSettings__ValidateLifetime: true
+
+secrets:
+  test:
+    possiblecertificate: b64encode
+  pilot:
+    possiblecertificate: b64encode

@@ -1,0 +1,2 @@
+downstream-project > upstream-project
+hello > world

@@ -1,0 +1,61 @@
+deployment:
+  replicas: 2
+
+service:
+  port: 80
+  targetPort: 5000
+  sessionAffinity: None
+
+ingress:
+  annotations:     
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location /someurl/ {
+        proxy_pass         "https://proxy.vendor.com:443/";
+        proxy_set_header   ar-authorization "Bearer 11111111111111111111";
+        proxy_ssl_server_name on;
+      }
+  hosts:
+  - domain: example.com.tr
+    subdomain: yksquestionapi
+  - domain: example.com.tr
+    subdomain: yksquestion
+    path: /api
+
+
+configs:
+  test:
+      Logging__LogLevel__Default: Information
+      Logging__LogLevel__Microsoft: Warning
+      Logging__LogLevel__Microsoft.Hosting.Lifetime: Information
+      QuestionsDatabase__CollectionName: questions
+      QuestionsDatabase__DatabaseName: brand_yks_questions
+      SmtpSettings__SmtpAddress: smtp02.example.com
+      SmtpSettings__Port: "25"
+      SmtpSettings__Username:
+      SmtpSettings__Password:
+  pilot:
+      Logging__LogLevel__Default: Information
+      Logging__LogLevel__Microsoft: Warning
+      Logging__LogLevel__Microsoft.Hosting.Lifetime: Information
+      QuestionsDatabase__CollectionName: questions
+      QuestionsDatabase__DatabaseName: brand_yks_questions
+      SmtpSettings__SmtpAddress: smtp01.example.com
+      SmtpSettings__Port: "25"
+      SmtpSettings__Username:
+      SmtpSettings__Password:
+  live:
+      Logging__LogLevel__Default: Information
+      Logging__LogLevel__Microsoft: Warning
+      Logging__LogLevel__Microsoft.Hosting.Lifetime: Information
+      QuestionsDatabase__CollectionName: questions
+      QuestionsDatabase__DatabaseName: brand_yks_questions
+      SmtpSettings__SmtpAddress: smtp04.example.com
+      SmtpSettings__Port: "25"
+      SmtpSettings__Username:
+      SmtpSettings__Password:
+
+secrets:
+  test:
+    QuestionsDatabase__ConnectionString: ZGlkIHlvdSByZWFsbHkgdGhpbmsgSSB3b3VsZCB3cml0ZSBzb21ldGhpbmcgc2Vuc2l0aXZlIGhlcmU/
+  pilot:
+    QuestionsDatabase__ConnectionString: ZGlkIHlvdSByZWFsbHkgdGhpbmsgSSB3b3VsZCB3cml0ZSBzb21ldGhpbmcgc2Vuc2l0aXZlIGhlcmU/

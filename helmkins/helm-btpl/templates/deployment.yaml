@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    {{- range $key, $value := .Values.deployment.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  labels:
+    {{- if eq .Values.setenv false }}
+    branch: "true"
+    {{- end }}
+    app: {{ template "resourcename" . }}
+  name: {{ template "resourcename" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.deployment.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: {{ template "resourcename" . }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ template "resourcename" . }}
+    spec:
+      affinity: {}
+      containers:
+      - image: {{ .Values.image }}
+        imagePullPolicy: IfNotPresent
+        name: default
+        resources:
+          requests:
+            memory: {{ .Values.requests.memory }}
+            cpu: {{ .Values.requests.cpu }}
+          limits:
+            memory: {{ .Values.limits.memory }}
+            cpu: {{ .Values.limits.cpu }}
+        {{- if eq .Values.setenv true }}
+        env:
+          {{- range $key, $value := (index .Values.configs .Release.Namespace) }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+          {{- end }}
+          {{- range $key, $_ := (index .Values.secrets .Release.Namespace) }}
+        - name: {{ $key }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "resourcename" $ }}
+              key: {{ $key }}
+          {{- end }}
+        {{- end}}
+      restartPolicy: Always

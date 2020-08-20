@@ -1,0 +1,10 @@
+FROM jenkins/jnlp-agent-docker
+USER root
+RUN wget https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz && \
+ tar -zxvf helm-v3.2.4-linux-amd64.tar.gz && \
+ mv linux-amd64/helm /usr/local/bin/helm && \
+ chmod +x /usr/local/bin/helm && \
+ curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl && \
+ chmod +x ./kubectl && \
+ mv ./kubectl /usr/local/bin/kubectl
+USER jenkins

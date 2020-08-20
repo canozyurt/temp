@@ -1,0 +1,31 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  labels:
+    {{- if eq .Values.setenv false }}
+    branch: "true"
+    {{- end }}
+    app: {{ template "resourcename" . }}
+  name: {{ template "resourcename" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  rules:
+    {{- range .Values.ingress.hosts }}
+  - host: {{ if eq $.Release.Namespace "live" -}}{{- .subdomain -}}
+          {{- else if and (eq (regexReplaceAll ".*/" $.Values.branch "" | default "development") "development") (eq .subdomain "www") -}}{{- $.Release.Namespace -}}
+          {{- else if and (eq (regexReplaceAll ".*/" $.Values.branch "" | default "development") "development") (ne .subdomain "www") -}}{{- .subdomain -}}.{{- $.Release.Namespace -}}
+          {{- else if ne .subdomain "www" -}}{{- (ternary ( list (regexReplaceAll ".*/" $.Values.branch "" | default "development") .subdomain | join "-") ( .subdomain) (ne (regexReplaceAll ".*/" $.Values.branch "" | default "development") "development")) | lower -}}.{{- $.Release.Namespace -}}
+          {{- else -}}{{- (regexReplaceAll ".*/" $.Values.branch "" | default "development") | lower -}}.{{- $.Release.Namespace -}}{{- end -}}.{{- .domain }}
+    http:
+      paths:
+      - backend:
+          serviceName: {{ template "resourcename" $ }}
+          servicePort: {{ $.Values.service.port }}
+        path: {{ .path | default "/" }}
+    {{- end }}
+{{- end }}

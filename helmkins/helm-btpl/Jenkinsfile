@@ -1,0 +1,298 @@
+def dockerRegistry= "dockerhub.example.com.tr"
+def dockerImageName
+def yamlFile
+def branchName
+
+if (env.BRANCH_NAME.contains('/')){
+
+    branchName = "${env.BRANCH_NAME.substring(BRANCH_NAME.lastIndexOf('/') + 1, BRANCH_NAME.length())}"
+    dockerImageName = "${dockerRegistry}/${JOB_NAME.substring(0, JOB_NAME.lastIndexOf('/'))}:${env.BRANCH_NAME.substring(BRANCH_NAME.lastIndexOf('/') + 1, BRANCH_NAME.length())}.${env.BUILD_NUMBER}";
+}
+
+else if (env.TAG_NAME){
+
+    branchName = "${env.BRANCH_NAME}"
+    dockerImageName = "${dockerRegistry}/${JOB_NAME.substring(0, JOB_NAME.lastIndexOf('/'))}:${env.BRANCH_NAME}";
+}
+
+else {
+    
+    branchName = "${env.BRANCH_NAME}"
+    dockerImageName = "${dockerRegistry}/${JOB_NAME.substring(0, JOB_NAME.lastIndexOf('/'))}:${env.BRANCH_NAME}.${env.BUILD_NUMBER}";
+}
+
+def projectName = "${JOB_NAME.substring(0, JOB_NAME.lastIndexOf('/'))}"
+def projectPath = "projects" +"/"+ "$projectName"
+
+def imageExists(String registry, String projectname, String tag) {
+    def get = new URL("http://" + registry + ":5000/v2/" + projectname + "/tags/list").openConnection();
+    if(get.getResponseCode().equals(200)) {
+        if (get.getInputStream().getText().contains(tag+"\"")) {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+}
+
+if (env.BRANCH_NAME.contains('development')){
+    yamlFile = """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: some-label-value
+spec:
+  containers:
+  - name: jnlp
+    image: dockerhub.example.com.tr/jnlp-agent-docker
+    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+    volumeMounts:
+    - mountPath: "/var/run/docker.sock"
+      name: docker-socket-volume
+    tty: true
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsUser: 0
+  - name: sonar-scanner
+    image: sonarsource/sonar-scanner-cli
+    env:
+    - name: SONAR_HOST_URL
+      value: "http://sonarqube.example.com"
+    - name: SONAR_LOGIN
+      value: 11111111111111111111111111111
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - mountPath: "/usr/src"
+      name: "workspace-volume"
+  volumes:
+  - hostPath:
+      path: "/var/run/docker.sock"
+    name: "docker-socket-volume"
+"""
+}
+
+else
+{
+    yamlFile = """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: some-label-value
+spec:
+  containers:
+  - name: jnlp
+    image: dockerhub.example.com.tr/jnlp-agent-docker
+    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+    volumeMounts:
+    - mountPath: "/var/run/docker.sock"
+      name: docker-socket-volume
+    tty: true
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsUser: 0
+  volumes:
+  - hostPath:
+      path: "/var/run/docker.sock"
+    name: "docker-socket-volume"
+"""
+}
+
+pipeline {
+
+    agent {
+        
+        kubernetes {
+            cloud 'kubernetes'
+            yaml "${yamlFile}"
+        }
+    }
+    
+    environment {
+        
+        bitbucket_id = credentials('bitbucket_id')
+        sonarqube_id = credentials('sonarqube_id')
+    }
+
+    stages {
+        
+        stage('Requirements'){
+            
+            parallel {
+                
+                stage('Helm') {
+                    
+                    steps {
+                        
+                        container('jnlp') {
+
+
+                            sh """
+                            helm repo add dt http://chartmuseum.example.com
+                            helm repo update
+                            """
+
+                        }
+                    }
+                }
+                
+                stage('Docker Build') {
+
+                    when { not { expression { imageExists("$dockerRegistry" ,"$projectName", "${env.BRANCH_NAME}")}} }
+                    
+                    steps {
+                        
+                        container('jnlp') {
+                            
+                        sh """
+                        curl --http1.1 https://${bitbucket_id}@bitbucket.org/user/helmkins/raw/master/projects/${projectName}/Dockerfile | docker build -f - -t ${dockerImageName} . --network=host
+                        docker push ${dockerImageName}
+                        """
+                      
+                        }
+                    }
+                }
+
+                stage('Sonarqube') {
+
+                    when { branch "development" }
+
+                    steps {
+                        container('sonar-scanner') {
+
+                        sh """
+                        sonar-scanner -Dsonar.login=${sonarqube_id} \\
+                        -Dsonar.projectBaseDir=/usr/src/workspace/\$(tail -n1 /usr/src/workspace/workspaces.txt) \\
+                        -Dsonar.projectKey=${projectName} \\
+                        -Dsonar.host.url=http://sonarqube.example.com \\
+                        """
+                      
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Test Check'){
+            
+            parallel {
+                
+                stage( 'Branch Deployment' ) {
+                    
+                    when { branch pattern: "feature.*", comparator: "REGEXP"}
+                    
+                    steps {
+
+                        container('jnlp') {
+
+                            sh ' echo "Deploying branch"'
+
+                            withKubeConfig([credentialsId: 'arge']) {
+
+                                sh """
+                                helm upgrade --install $projectName-$branchName dt/btpl -f https://${bitbucket_id}@bitbucket.org/user/helmkins/raw/master/projects/${projectName}/values.yaml --namespace test \\
+                                --set image=${dockerImageName} \\
+                                --set branch=${env.BRANCH_NAME} \\
+                                --set setenv=false \\
+                                """
+                            }
+                        }
+                    }
+                }
+                
+                stage('Test Deployment'){
+                    
+                    when { branch 'development'}
+                    
+                    steps {
+                        
+                        container('jnlp') {
+
+                            sh ' echo "Deploying development"'
+                            withKubeConfig([credentialsId: 'arge']) {
+ 
+                                 sh """
+                                 helm upgrade --install $projectName-$branchName dt/btpl -f https://${bitbucket_id}@bitbucket.org/user/helmkins/raw/master/projects/${projectName}/values.yaml --namespace=test \\
+                                 --set image=${dockerImageName} \\
+                                 --set branch=${env.BRANCH_NAME} \\
+                                 --set configs.test.version=${env.BUILD_NUMBER} \\
+                                 """
+                            }
+                        }
+                    }
+                }
+            }
+        }
+           
+        stage('Production Check') {
+        
+            when { buildingTag() }
+
+            stages{
+                
+                stage('Pilot Deployment'){
+                
+                    steps{
+                        
+                        container('jnlp') {
+
+                            script {
+
+                                sh """
+                                curl https://${bitbucket_id}@bitbucket.org/user/helmkins/raw/master/helm-btpl/dependant_projects.txt | grep $projectName | awk '{ print \$3 }' > projectToBuild								
+                                echo "Deploying to pilot"
+                                """
+                                projectToBuild = readFile ('projectToBuild').trim()
+
+                                if ( projectToBuild != "$projectName" ) 
+                                    build job: "/${projectToBuild}/${branchName}", wait: true
+
+                                withKubeConfig([credentialsId: 'arge']) {
+
+                                    sh """
+                                    helm upgrade --install $projectName dt/btpl -f https://${bitbucket_id}@bitbucket.org/user/helmkins/raw/master/projects/${projectName}/values.yaml --namespace pilot \\
+                                    --set image=${dockerImageName} \\
+                                    --set configs.pilot.version=${env.TAG_NAME}.${env.BUILD_NUMBER} \\
+                                    """
+                                }
+                            }
+
+                        }
+                    }
+                }
+    
+                stage('Live Deployment'){
+                    
+                    options { timeout(time: 1, unit: 'MINUTES') }
+                    
+                    input{
+                        message "Go Live?"
+                        ok "Yeah"
+                        submitter "Submitter"
+                    }
+                        
+                    steps{
+                        
+                        container('jnlp') {
+                            
+                            sh 'echo "Deploying to live"'
+                            
+                            withKubeConfig([credentialsId: 'arge']) {
+                                
+                                sh """
+                                helm upgrade --install $projectName dt/btpl -f https://${bitbucket_id}@bitbucket.org/user/helmkins/raw/master/projects/${projectName}/values.yaml --namespace live \\
+                                --set image=${dockerImageName} \\
+                                --set configs.live.version=${env.TAG_NAME}.${env.BUILD_NUMBER} \\
+                                """
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

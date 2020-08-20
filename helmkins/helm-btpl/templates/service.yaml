@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    {{- range $key, $value := .Values.service.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  labels:
+    {{- if eq .Values.setenv false }}
+    branch: "true"
+    {{- end }}
+    app: {{ template "resourcename" . }}
+  name: {{ template "resourcename" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: {{ .Values.service.targetPort}}
+  selector:
+    app: {{ template "resourcename" . }}
+  sessionAffinity: {{ .Values.service.sessionAffinity | default "None" }}
+  type: ClusterIP
