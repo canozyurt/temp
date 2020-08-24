@@ -15,6 +15,7 @@ var rootCmd = &cobra.Command{
 
 		MyList := make(map[string]*PodAttributes)
 		kubectl := newClientSetFromConfigFile()
+
 		pods := kubectl.getPods()
 		err := parsePods(pods, &MyList)
 		if err != nil {
@@ -26,11 +27,8 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			panic(err.Error())
 		}
-
-		for key := range MyList {
-			ColorPrint(MyList[key])
-		}
-
+		//adding pods to use its order to sort MyList by namespace, apparently maps output randomly.
+			ColorPrint(&MyList, pods)
 	},
 }
 
