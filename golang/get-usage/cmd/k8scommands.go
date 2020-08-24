@@ -85,7 +85,7 @@ func parsePods (pods *v1.PodList, MyList *map[string]*PodAttributes) error {
 			name: pod.Name,
 			namespace: pod.Namespace,
 			cpuLimit: pod.Spec.Containers[0].Resources.Limits.Cpu().MilliValue(),
-			memoryLimit: pod.Spec.Containers[0].Resources.Limits.Memory().MilliValue()/1024000000,
+			memoryLimit: pod.Spec.Containers[0].Resources.Limits.Memory().MilliValue()/10240000000,
 			nodeName: pod.Spec.NodeName,
 		}
 	}
