@@ -6,7 +6,7 @@ else
         echo "Installing varnish first... "
         curl -s https://packagecloud.io/install/repositories/varnishcache/varnish60lts/script.deb.sh | sudo bash
 		echo -n "Installing varnish... "
-        apt install varnish=6.0.6-1 varnish-dev=6.0.6-1 -y &> /dev/null
+        apt install varnish=6.0.6-1~bionic varnish-dev=6.0.6-1~bionic -y &> /dev/null
         echo "done."
 fi
 
