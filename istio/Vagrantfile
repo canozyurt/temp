@@ -1,0 +1,70 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+
+
+  ssh_pub_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCmwRJFyn3Br9iv6EdAj3xBwbxFQiblC9ZwCXweqchigZao9U/18DOvDQiPmoHkRKIilibVFaK94GCJBrRlDiLOr2kLI/kwuYQ3Ub0Tm1xIxySVRNrVvZry+sGt4dmIJepfWXKSdB26UiFypWXFjYtpaao8J4wu1b9kgPbxN0ei0YW4XQi9lDFiFcyzmS/w6Ax93NHvhF0HUPZND0i2DxRRDnX5TpYBhQbVaLyabM47sT+uGpbYi2oSsnni6aRoSWls8LYDJgJF02GY6IfRDaSy4bTMHdMidR3z5+S1iss8yzXBJI1xuEq8JWSmbdYq+MC1SETnko8JIH/Kk6owWOHV root@cepbep03"
+  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 8192
+    v.cpus = 3
+  end
+
+  config.vm.provision 'shell', inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys"
+
+  config.vm.post_up_message = "Up and running!"
+  
+  config.vm.define "west1" do |west1|
+    west1.vm.box = "geerlingguy/ubuntu1804"
+    west1.vm.hostname = "west1"
+    west1.vm.network "private_network", ip: "192.168.2.31"
+  end
+  
+  config.vm.define "west2" do |west2|
+    west2.vm.box = "geerlingguy/ubuntu1804"
+    west2.vm.hostname = "west2"
+    west2.vm.network "private_network", ip: "192.168.2.32"
+  end
+  
+  config.vm.define "west3" do |west3|
+    west3.vm.box = "geerlingguy/ubuntu1804"
+    west3.vm.hostname = "west3"
+    west3.vm.network "private_network", ip: "192.168.2.33"
+  end
+
+  config.vm.define "west4" do |west4|
+    west4.vm.box = "geerlingguy/ubuntu1804"
+    west4.vm.hostname = "west4"
+    west4.vm.network "private_network", ip: "192.168.2.34"
+  end
+
+   config.vm.define "east1" do |east1|
+    east1.vm.box = "geerlingguy/ubuntu1804"
+    east1.vm.hostname = "east1"
+    east1.vm.network "private_network", ip: "192.168.3.31"
+  end
+  
+  config.vm.define "east2" do |east2|
+    east2.vm.box = "geerlingguy/ubuntu1804"
+    east2.vm.hostname = "east2"
+    east2.vm.network "private_network", ip: "192.168.3.32"
+  end
+  
+  config.vm.define "east3" do |east3|
+    east3.vm.box = "geerlingguy/ubuntu1804"
+    east3.vm.hostname = "east3"
+    east3.vm.network "private_network", ip: "192.168.3.33"
+  end
+
+  config.vm.define "east4" do |east4|
+    east4.vm.box = "geerlingguy/ubuntu1804"
+    east4.vm.hostname = "east4"
+    east4.vm.network "private_network", ip: "192.168.3.34"
+  end
+end
+
