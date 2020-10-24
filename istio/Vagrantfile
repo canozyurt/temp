@@ -8,9 +8,9 @@
 Vagrant.configure("2") do |config|
 
 
-  ssh_pub_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCmwRJFyn3Br9iv6EdAj3xBwbxFQiblC9ZwCXweqchigZao9U/18DOvDQiPmoHkRKIilibVFaK94GCJBrRlDiLOr2kLI/kwuYQ3Ub0Tm1xIxySVRNrVvZry+sGt4dmIJepfWXKSdB26UiFypWXFjYtpaao8J4wu1b9kgPbxN0ei0YW4XQi9lDFiFcyzmS/w6Ax93NHvhF0HUPZND0i2DxRRDnX5TpYBhQbVaLyabM47sT+uGpbYi2oSsnni6aRoSWls8LYDJgJF02GY6IfRDaSy4bTMHdMidR3z5+S1iss8yzXBJI1xuEq8JWSmbdYq+MC1SETnko8JIH/Kk6owWOHV root@cepbep03"
-  config.vm.box = "geerlingguy/ubuntu1804"
-  config.vm.provider "virtualbox" do |v|
+  ssh_pub_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOK99l9c6rGcoV7oZBBEJ+xYgcgpwoj4DbepPEQ3LWqT3go5dIRmfx3wdHtCw9dvL6nGHRRdxgFQVQF1+SWnny3F2VnhN3c7z5PD4s7ugrAHIrHyy7a9nlsHz1FS0f5WbMOdwPysDQsegpqYAz/3tvTzlEtnBitVHJrJw1mh7pO8ZrhsUiPvspBOAQvROVFLTY1tGR4rZ5Kz9cMvSn/rNQ2L8NY8SiAu5RnoycbHksig4YpRYHdLvp6WO1AbCZy4UFKSpPr6WGus/iOwG83+dcnR18Zlv9+ZUC91k+wFGezQkIjdMjUP/6ki3XJUICfrcExdDsSoKOPB2DPRn4eawH root@wisgndt86"
+  config.vm.box = "generic/ubuntu1804"
+  config.vm.provider "libvirt" do |v|
     v.memory = 8192
     v.cpus = 3
   end
@@ -20,51 +20,43 @@ Vagrant.configure("2") do |config|
   config.vm.post_up_message = "Up and running!"
   
   config.vm.define "west1" do |west1|
-    west1.vm.box = "geerlingguy/ubuntu1804"
     west1.vm.hostname = "west1"
-    west1.vm.network "private_network", ip: "192.168.2.31"
+    west1.vm.network :public_network, :ip => "10.243.28.50", :dev => "br0", :mode => "bridge", :bridge => "br0"
   end
   
   config.vm.define "west2" do |west2|
-    west2.vm.box = "geerlingguy/ubuntu1804"
     west2.vm.hostname = "west2"
-    west2.vm.network "private_network", ip: "192.168.2.32"
+    west2.vm.network :public_network, :ip => "10.243.28.51", :dev => "br0", :mode => "bridge", :bridge => "br0"
   end
   
   config.vm.define "west3" do |west3|
-    west3.vm.box = "geerlingguy/ubuntu1804"
     west3.vm.hostname = "west3"
-    west3.vm.network "private_network", ip: "192.168.2.33"
+    west3.vm.network :public_network, :ip => "10.243.28.52", :dev => "br0", :mode => "bridge", :bridge => "br0"
   end
 
   config.vm.define "west4" do |west4|
-    west4.vm.box = "geerlingguy/ubuntu1804"
     west4.vm.hostname = "west4"
-    west4.vm.network "private_network", ip: "192.168.2.34"
+    west4.vm.network :public_network, :ip => "10.243.28.53", :dev => "br0", :mode => "bridge", :bridge => "br0"
   end
 
    config.vm.define "east1" do |east1|
-    east1.vm.box = "geerlingguy/ubuntu1804"
     east1.vm.hostname = "east1"
-    east1.vm.network "private_network", ip: "192.168.3.31"
+    east1.vm.network :public_network, :ip => "10.243.28.60", :dev => "br0", :mode => "bridge", :bridge => "br0"
   end
   
   config.vm.define "east2" do |east2|
-    east2.vm.box = "geerlingguy/ubuntu1804"
     east2.vm.hostname = "east2"
-    east2.vm.network "private_network", ip: "192.168.3.32"
+    east2.vm.network :public_network, :ip => "10.243.28.61", :dev => "br0", :mode => "bridge", :bridge => "br0"
   end
   
   config.vm.define "east3" do |east3|
-    east3.vm.box = "geerlingguy/ubuntu1804"
     east3.vm.hostname = "east3"
-    east3.vm.network "private_network", ip: "192.168.3.33"
+    east3.vm.network :public_network, :ip => "10.243.28.62", :dev => "br0", :mode => "bridge", :bridge => "br0"
   end
 
   config.vm.define "east4" do |east4|
-    east4.vm.box = "geerlingguy/ubuntu1804"
     east4.vm.hostname = "east4"
-    east4.vm.network "private_network", ip: "192.168.3.34"
+    east4.vm.network :public_network, :ip => "10.243.28.63", :dev => "br0", :mode => "bridge", :bridge => "br0"
   end
 end
 
